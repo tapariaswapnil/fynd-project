@@ -104,9 +104,7 @@
     loggedIn: Ember.computed.reads('authenticated.successful'),
     classNames: ['movie-card'],
     yearString: Ember.computed('movie.year', function () {
-      let {
-        year
-      } = this.movie;
+      let year = this.get('movie.year');
 
       if (year) {
         let [start, end] = year.split('-');
@@ -123,12 +121,18 @@
       return '-';
     }),
     bgClass: Ember.computed('movie.type', function () {
-      if (this.movie.type === 'movie') {
+      if (this.get('movie.type') === 'movie') {
         return 'bg-blue';
       }
 
       return 'bg-red';
-    })
+    }),
+    actions: {
+      delete() {
+        Ember.get(this, 'deleteMovie') && Ember.get(this, 'deleteMovie')(this.movie.id);
+      }
+
+    }
   });
 
   _exports.default = _default;
@@ -157,6 +161,12 @@
   _exports.default = void 0;
 
   var _default = Ember.Component.extend({
+    init() {
+      this._super(...arguments);
+
+      this.set('moviesArray', [...this.movies.toArray()]);
+    },
+
     search: Ember.inject.service(),
     searchQuery: Ember.computed.reads('search.searchQuery'),
     allGenre: Ember.computed.equal('search.selectedGenre', 'All'),
@@ -183,14 +193,29 @@
 
       return movies;
     }),
-    filteredMovies: Ember.computed('allGenre', 'search.selectedGenres', 'movies.@each.genre', function () {
-      if (this.allGenre) return this.movies;
-      return this.movies.filter(({
+    compactMovies: Ember.computed('moviesArray.[]', function () {
+      return this.moviesArray.compact();
+    }),
+    filteredMovies: Ember.computed('allGenre', 'search.selectedGenres', 'compactMovies.@each.genre', function () {
+      if (this.allGenre) return this.compactMovies;
+      return this.compactMovies.filter(({
         genre
       }) => {
         return genre.includes(this.search.selectedGenre);
       });
-    })
+    }),
+    actions: {
+      deleteMovie(id) {
+        let index = this.moviesArray.findIndex(movie => {
+          return movie && movie.id === id;
+        });
+        this.moviesArray.splice(index, 1);
+        let movies = this.moviesArray;
+        this.set('moviesArray', null);
+        this.set('moviesArray', movies);
+      }
+
+    }
   });
 
   _exports.default = _default;
@@ -857,8 +882,8 @@
   _exports.default = void 0;
 
   var _default = Ember.HTMLBars.template({
-    "id": "1GfVxY5X",
-    "block": "{\"symbols\":[\"movie\",\"index\"],\"statements\":[[4,\"if\",[[23,0,[\"searchedMovies\"]]],null,{\"statements\":[[0,\"  \"],[7,\"div\",true],[10,\"class\",\"movie-list\"],[8],[0,\"\\n\"],[4,\"each\",[[23,0,[\"searchedMovies\"]]],null,{\"statements\":[[0,\"      \"],[5,\"movie-details\",[],[[\"@loggedIn\",\"@position\",\"@movie\"],[[23,0,[\"loggedIn\"]],[28,\"plus-one\",[[23,2,[]]],null],[23,1,[]]]]],[0,\"\\n\"]],\"parameters\":[1,2]},null],[0,\"  \"],[9],[0,\"\\n\"]],\"parameters\":[]},{\"statements\":[[0,\"  \"],[7,\"div\",true],[10,\"class\",\"no-movie\"],[8],[0,\"NO MOVIES TO SHOW\"],[9],[0,\"\\n\"]],\"parameters\":[]}]],\"hasEval\":false}",
+    "id": "cAVHrEax",
+    "block": "{\"symbols\":[\"movie\",\"index\"],\"statements\":[[4,\"if\",[[23,0,[\"searchedMovies\"]]],null,{\"statements\":[[0,\"  \"],[7,\"div\",true],[10,\"class\",\"movie-list\"],[8],[0,\"\\n\"],[4,\"each\",[[23,0,[\"searchedMovies\"]]],null,{\"statements\":[[0,\"      \"],[5,\"movie-details\",[],[[\"@loggedIn\",\"@position\",\"@movie\",\"@deleteMovie\"],[[23,0,[\"loggedIn\"]],[28,\"plus-one\",[[23,2,[]]],null],[23,1,[]],[28,\"action\",[[23,0,[]],\"deleteMovie\"],null]]]],[0,\"\\n\"]],\"parameters\":[1,2]},null],[0,\"  \"],[9],[0,\"\\n\"]],\"parameters\":[]},{\"statements\":[[0,\"  \"],[7,\"div\",true],[10,\"class\",\"no-movie\"],[8],[0,\"NO MOVIES TO SHOW\"],[9],[0,\"\\n\"]],\"parameters\":[]}]],\"hasEval\":false}",
     "meta": {
       "moduleName": "movie-portal/templates/components/movies-wrapper.hbs"
     }
