@@ -568,7 +568,9 @@
     }, function () {
       this.route('edit');
     });
-    this.route('movies');
+    this.route('movies', {
+      path: ''
+    });
   });
 });
 ;define("movie-portal/routes/add", ["exports"], function (_exports) {
