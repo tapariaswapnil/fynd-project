@@ -290,9 +290,13 @@ define("movie-portal/tests/lint/app.lint-test", [], function () {
     assert.expect(1);
     assert.ok(true, 'components/movies-wrapper.js should pass ESLint\n\n');
   });
+  QUnit.test('controllers/add.js', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'controllers/add.js should pass ESLint\n\n');
+  });
   QUnit.test('controllers/application.js', function (assert) {
     assert.expect(1);
-    assert.ok(false, 'controllers/application.js should pass ESLint\n\n29:22 - \'genre\' is assigned a value but never used. (no-unused-vars)');
+    assert.ok(true, 'controllers/application.js should pass ESLint\n\n');
   });
   QUnit.test('controllers/login.js', function (assert) {
     assert.expect(1);
@@ -340,7 +344,7 @@ define("movie-portal/tests/lint/app.lint-test", [], function () {
   });
   QUnit.test('services/search.js', function (assert) {
     assert.expect(1);
-    assert.ok(true, 'services/search.js should pass ESLint\n\n');
+    assert.ok(false, 'services/search.js should pass ESLint\n\n20:22 - \'genre\' is assigned a value but never used. (no-unused-vars)');
   });
 });
 define("movie-portal/tests/lint/templates.template.lint-test", [], function () {
@@ -436,6 +440,10 @@ define("movie-portal/tests/lint/tests.lint-test", [], function () {
     assert.expect(1);
     assert.ok(true, 'test-helper.js should pass ESLint\n\n');
   });
+  QUnit.test('unit/controllers/add-test.js', function (assert) {
+    assert.expect(1);
+    assert.ok(true, 'unit/controllers/add-test.js should pass ESLint\n\n');
+  });
   QUnit.test('unit/controllers/application-test.js', function (assert) {
     assert.expect(1);
     assert.ok(true, 'unit/controllers/application-test.js should pass ESLint\n\n');
@@ -478,6 +486,18 @@ define("movie-portal/tests/test-helper", ["movie-portal/app", "movie-portal/conf
 
   (0, _testHelpers.setApplication)(_app.default.create(_environment.default.APP));
   (0, _emberQunit.start)();
+});
+define("movie-portal/tests/unit/controllers/add-test", ["qunit", "ember-qunit"], function (_qunit, _emberQunit) {
+  "use strict";
+
+  (0, _qunit.module)('Unit | Controller | add', function (hooks) {
+    (0, _emberQunit.setupTest)(hooks); // Replace this with your real tests.
+
+    (0, _qunit.test)('it exists', function (assert) {
+      let controller = this.owner.lookup('controller:add');
+      assert.ok(controller);
+    });
+  });
 });
 define("movie-portal/tests/unit/controllers/application-test", ["qunit", "ember-qunit"], function (_qunit, _emberQunit) {
   "use strict";
