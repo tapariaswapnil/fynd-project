@@ -41,18 +41,6 @@
   _exports.default = App;
   (0, _emberLoadInitializers.default)(App, _environment.default.modulePrefix);
 });
-;define("movie-portal/components/add-movie", ["exports"], function (_exports) {
-  "use strict";
-
-  Object.defineProperty(_exports, "__esModule", {
-    value: true
-  });
-  _exports.default = void 0;
-
-  var _default = Ember.Component.extend({});
-
-  _exports.default = _default;
-});
 ;define("movie-portal/components/input-field", ["exports"], function (_exports) {
   "use strict";
 
@@ -84,6 +72,30 @@
           this.toggleProperty('authenticated.refresh');
           this.logIn && this.logIn();
         }
+      }
+
+    }
+  });
+
+  _exports.default = _default;
+});
+;define("movie-portal/components/movie-action", ["exports"], function (_exports) {
+  "use strict";
+
+  Object.defineProperty(_exports, "__esModule", {
+    value: true
+  });
+  _exports.default = void 0;
+
+  var _default = Ember.Component.extend({
+    search: Ember.inject.service(),
+    editMovie: Ember.computed.equal('action', 'edit'),
+    buttonLabel: Ember.computed('editMovie', function () {
+      return this.editMovie ? "Edit" : "Add";
+    }),
+    actions: {
+      takeAction() {
+        this.get('afterAction') && this.get('afterAction')(this.movie, this.search.model);
       }
 
     }
@@ -130,30 +142,6 @@
     actions: {
       delete() {
         Ember.get(this, 'deleteMovie') && Ember.get(this, 'deleteMovie')(this.movie.id);
-      }
-
-    }
-  });
-
-  _exports.default = _default;
-});
-;define("movie-portal/components/movie", ["exports"], function (_exports) {
-  "use strict";
-
-  Object.defineProperty(_exports, "__esModule", {
-    value: true
-  });
-  _exports.default = void 0;
-
-  var _default = Ember.Component.extend({
-    search: Ember.inject.service(),
-    editMovie: Ember.computed.equal('action', 'edit'),
-    buttonLabel: Ember.computed('editMovie', function () {
-      return this.editMovie ? "Edit" : "Add";
-    }),
-    actions: {
-      takeAction() {
-        this.get('afterAction') && this.get('afterAction')(this.movie, this.search.model);
       }
 
     }
@@ -313,6 +301,25 @@
   var _default = Ember.Controller.extend({
     actions: {
       transitionToMovies() {
+        this.transitionToRoute('movies');
+      }
+
+    }
+  });
+
+  _exports.default = _default;
+});
+;define("movie-portal/controllers/movie/edit", ["exports"], function (_exports) {
+  "use strict";
+
+  Object.defineProperty(_exports, "__esModule", {
+    value: true
+  });
+  _exports.default = void 0;
+
+  var _default = Ember.Controller.extend({
+    actions: {
+      afterEdit() {
         this.transitionToRoute('movies');
       }
 
@@ -588,6 +595,14 @@
   _exports.default = void 0;
 
   var _default = Ember.Route.extend({
+    authenticated: Ember.inject.service(),
+
+    beforeModel() {
+      if (!this.authenticated.successful) {
+        this.transitionTo('movies');
+      }
+    },
+
     model() {
       return {
         title: "",
@@ -637,7 +652,16 @@
   });
   _exports.default = void 0;
 
-  var _default = Ember.Route.extend({});
+  var _default = Ember.Route.extend({
+    authenticated: Ember.inject.service(),
+
+    beforeModel() {
+      if (!this.authenticated.successful) {
+        this.transitionTo('movies');
+      }
+    }
+
+  });
 
   _exports.default = _default;
 });
@@ -656,14 +680,18 @@
       let {
         id
       } = this.paramsFor('movie');
-      return this.search.model.findBy('id', id);
+      return fetch('/imdb.json').then(data => {
+        return data.json();
+      }).then(data => {
+        return data.findBy('id', id);
+      });
     }
 
   });
 
   _exports.default = _default;
 });
-;define("movie-portal/routes/movies", ["exports", "fetch"], function (_exports, _fetch) {
+;define("movie-portal/routes/movies", ["exports"], function (_exports) {
   "use strict";
 
   Object.defineProperty(_exports, "__esModule", {
@@ -672,10 +700,10 @@
   _exports.default = void 0;
 
   var _default = Ember.Route.extend({
+    search: Ember.inject.service(),
+
     model() {
-      return (0, _fetch.default)('/imdb.json').then(data => {
-        return data.json();
-      });
+      return this.search.model;
     }
 
   });
@@ -782,8 +810,8 @@
   _exports.default = void 0;
 
   var _default = Ember.HTMLBars.template({
-    "id": "tzfLV69N",
-    "block": "{\"symbols\":[],\"statements\":[[5,\"movie\",[[12,\"action\",\"add\"],[12,\"class\",\"add-movie-wrapper\"]],[[\"@afterAction\",\"@movie\"],[[28,\"action\",[[23,0,[]],\"afterAdd\"],null],[23,0,[\"model\"]]]]]],\"hasEval\":false}",
+    "id": "o5qe9nyg",
+    "block": "{\"symbols\":[],\"statements\":[[5,\"movie-action\",[[12,\"action\",\"add\"],[12,\"class\",\"add-movie-wrapper\"]],[[\"@afterAction\",\"@movie\"],[[28,\"action\",[[23,0,[]],\"afterAdd\"],null],[23,0,[\"model\"]]]]]],\"hasEval\":false}",
     "meta": {
       "moduleName": "movie-portal/templates/add.hbs"
     }
@@ -804,24 +832,6 @@
     "block": "{\"symbols\":[\"genre\"],\"statements\":[[7,\"nav\",true],[8],[0,\"\\n  \"],[7,\"div\",true],[10,\"class\",\"container\"],[8],[0,\"\\n\"],[4,\"if\",[[23,0,[\"showInputField\"]]],null,{\"statements\":[[0,\"      \"],[5,\"input-field\",[[12,\"class\",\"search-input\"]],[[\"@placeholder\",\"@value\"],[\"Search by movie name or director\",[23,0,[\"searchQuery\"]]]]],[0,\"\\n      \"],[7,\"select\",true],[11,\"onchange\",[28,\"action\",[[23,0,[]],[28,\"mut\",[[23,0,[\"search\",\"selectedGenre\"]]],null]],[[\"value\"],[\"target.value\"]]]],[10,\"name\",\"genre\"],[10,\"id\",\"genre\"],[8],[0,\"\\n        \"],[7,\"option\",true],[10,\"value\",\"All\"],[8],[0,\"All\"],[9],[0,\"\\n\"],[4,\"each\",[[23,0,[\"search\",\"genres\"]]],null,{\"statements\":[[0,\"          \"],[7,\"option\",true],[11,\"selected\",[28,\"eq\",[[23,1,[]],[23,0,[\"search\",\"selectedGenre\"]]],null]],[11,\"value\",[23,1,[]]],[8],[1,[23,1,[]],false],[9],[0,\"\\n\"]],\"parameters\":[1]},null],[0,\"      \"],[9],[0,\"\\n\"]],\"parameters\":[]},null],[4,\"if\",[[23,0,[\"showMoviesButton\"]]],null,{\"statements\":[[0,\"      \"],[5,\"link-to\",[[12,\"class\",\"link\"]],[[\"@route\"],[\"movies\"]],{\"statements\":[[0,\"Movies\"]],\"parameters\":[]}],[0,\"\\n\"]],\"parameters\":[]},null],[4,\"if\",[[23,0,[\"loggedIn\"]]],null,{\"statements\":[[4,\"if\",[[24,[\"showAddMovieButton\"]]],null,{\"statements\":[[0,\"        \"],[5,\"link-to\",[[12,\"class\",\"link\"]],[[\"@route\"],[\"add\"]],{\"statements\":[[0,\"Add Movie\"]],\"parameters\":[]}],[0,\"\\n\"]],\"parameters\":[]},null],[0,\"      \"],[7,\"div\",true],[8],[0,\"\\n        \"],[7,\"button\",false],[12,\"class\",\"btn\"],[3,\"action\",[[23,0,[]],\"logOut\"]],[8],[0,\"Logout\"],[9],[0,\"\\n        \"],[7,\"span\",true],[10,\"class\",\"avatar\"],[8],[0,\"\\n          \"],[7,\"span\",true],[8],[0,\"A\"],[9],[0,\"\\n        \"],[9],[0,\"\\n      \"],[9],[0,\"\\n\"]],\"parameters\":[]},{\"statements\":[[4,\"if\",[[23,0,[\"showLogInButton\"]]],null,{\"statements\":[[0,\"        \"],[5,\"link-to\",[[12,\"class\",\"btn\"]],[[\"@route\"],[\"login\"]],{\"statements\":[[0,\"Login\"]],\"parameters\":[]}],[0,\"\\n\"]],\"parameters\":[]},null]],\"parameters\":[]}],[0,\"  \"],[9],[0,\"\\n\"],[9],[0,\"\\n\"],[7,\"div\",true],[10,\"class\",\"main container\"],[8],[0,\"\\n  \"],[1,[22,\"outlet\"],false],[0,\"\\n\"],[9]],\"hasEval\":false}",
     "meta": {
       "moduleName": "movie-portal/templates/application.hbs"
-    }
-  });
-
-  _exports.default = _default;
-});
-;define("movie-portal/templates/components/add-movie", ["exports"], function (_exports) {
-  "use strict";
-
-  Object.defineProperty(_exports, "__esModule", {
-    value: true
-  });
-  _exports.default = void 0;
-
-  var _default = Ember.HTMLBars.template({
-    "id": "i40ve23I",
-    "block": "{\"symbols\":[],\"statements\":[[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"Title\",[23,0,[\"movie\",\"title\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"year\",[23,0,[\"movie\",\"year\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"rated\",[23,0,[\"movie\",\"rated\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"released\",[23,0,[\"movie\",\"released\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"runtime\",[23,0,[\"movie\",\"runtime\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"genre\",[23,0,[\"movie\",\"genre\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"director\",[23,0,[\"movie\",\"director\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"writer\",[23,0,[\"movie\",\"writer\"]]]]],[0,\"\\n\"],[7,\"label\",true],[10,\"class\",\"input-label\"],[8],[0,\"Plot\"],[9],[0,\"\\n\"],[5,\"textarea\",[[12,\"rows\",\"5\"]],[[\"@value\"],[[23,0,[\"movie\",\"plot\"]]]]],[0,\"\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"Genres\",[23,0,[\"movie\",\"genre\"]]]]],[0,\"\\n\"],[7,\"button\",true],[10,\"class\",\"btn\"],[8],[0,\"Add\"],[9]],\"hasEval\":false}",
-    "meta": {
-      "moduleName": "movie-portal/templates/components/add-movie.hbs"
     }
   });
 
@@ -863,6 +873,24 @@
 
   _exports.default = _default;
 });
+;define("movie-portal/templates/components/movie-action", ["exports"], function (_exports) {
+  "use strict";
+
+  Object.defineProperty(_exports, "__esModule", {
+    value: true
+  });
+  _exports.default = void 0;
+
+  var _default = Ember.HTMLBars.template({
+    "id": "X6Y15AUB",
+    "block": "{\"symbols\":[],\"statements\":[[5,\"input-field\",[],[[\"@label\",\"@value\",\"@disabled\"],[\"Title\",[23,0,[\"movie\",\"title\"]],[23,0,[\"editMovie\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"Type\",[23,0,[\"movie\",\"type\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"year\",[23,0,[\"movie\",\"year\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"rated\",[23,0,[\"movie\",\"rated\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"released\",[23,0,[\"movie\",\"released\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"runtime\",[23,0,[\"movie\",\"runtime\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"director\",[23,0,[\"movie\",\"director\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"writer\",[23,0,[\"movie\",\"writer\"]]]]],[0,\"\\n\"],[7,\"label\",true],[10,\"class\",\"input-label\"],[8],[0,\"Plot\"],[9],[0,\"\\n\"],[5,\"textarea\",[[12,\"rows\",\"5\"]],[[\"@value\"],[[23,0,[\"movie\",\"plot\"]]]]],[0,\"\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"Genre(s)\",[23,0,[\"movie\",\"genre\"]]]]],[0,\"\\n\"],[7,\"button\",false],[12,\"class\",\"btn\"],[3,\"action\",[[23,0,[]],\"takeAction\"]],[8],[1,[23,0,[\"buttonLabel\"]],false],[9]],\"hasEval\":false}",
+    "meta": {
+      "moduleName": "movie-portal/templates/components/movie-action.hbs"
+    }
+  });
+
+  _exports.default = _default;
+});
 ;define("movie-portal/templates/components/movie-details", ["exports"], function (_exports) {
   "use strict";
 
@@ -872,28 +900,10 @@
   _exports.default = void 0;
 
   var _default = Ember.HTMLBars.template({
-    "id": "x3huINsC",
-    "block": "{\"symbols\":[],\"statements\":[[7,\"div\",true],[10,\"class\",\"poster\"],[8],[0,\"\\n  \"],[7,\"img\",true],[11,\"src\",[23,0,[\"movie\",\"poster\"]]],[11,\"alt\",[29,[\"Poster for \",[23,0,[\"movie\",\"title\"]]]]],[10,\"z\",\"\"],[8],[9],[0,\"\\n\"],[9],[0,\"\\n\"],[7,\"div\",true],[10,\"class\",\"details\"],[8],[0,\"\\n  \"],[7,\"div\",true],[8],[0,\"\\n    \"],[7,\"span\",true],[11,\"class\",[29,[\"badge \",[22,\"bgClass\"]]]],[8],[1,[23,0,[\"movie\",\"type\"]],false],[9],[0,\"\\n  \"],[9],[0,\"\\n  \"],[7,\"h3\",true],[10,\"class\",\"title\"],[8],[0,\"\\n    \"],[7,\"span\",true],[10,\"class\",\"position font-normal\"],[8],[1,[22,\"position\"],false],[0,\".\"],[9],[0,\" \"],[1,[23,0,[\"movie\",\"title\"]],false],[0,\"\\n    \"],[7,\"span\",true],[10,\"class\",\"text-muted font-normal\"],[8],[0,\"(\"],[1,[23,0,[\"yearString\"]],false],[0,\")\"],[9],[0,\"\\n  \"],[9],[0,\"\\n  \"],[7,\"div\",true],[10,\"class\",\"censor-runtime-genre\"],[8],[0,\"\\n    \"],[1,[23,0,[\"movie\",\"rated\"]],false],[0,\" \"],[7,\"span\",true],[10,\"class\",\"ghost\"],[8],[0,\"|\"],[9],[0,\" \"],[1,[23,0,[\"movie\",\"runtime\"]],false],[0,\" \"],[7,\"span\",true],[10,\"class\",\"ghost\"],[8],[0,\"|\"],[9],[0,\"\\n    \"],[1,[23,0,[\"movie\",\"genre\"]],false],[0,\"\\n  \"],[9],[0,\"\\n  \"],[7,\"div\",true],[10,\"class\",\"rating\"],[8],[0,\"\\n    \"],[7,\"i\",true],[10,\"class\",\"icon-yellow fa fa-star\"],[8],[9],[0,\" \"],[7,\"strong\",true],[8],[1,[23,0,[\"movie\",\"imdbRating\"]],false],[9],[0,\"\\n\"],[4,\"if\",[[23,0,[\"movie\",\"metascore\"]]],null,{\"statements\":[[0,\"      \"],[7,\"span\",true],[10,\"class\",\"mt-score\"],[8],[0,\"\\n        \"],[7,\"span\",true],[10,\"class\",\"badge bg-yellow\"],[8],[1,[23,0,[\"movie\",\"metascore\"]],false],[9],[0,\"\\n        \"],[7,\"span\",true],[10,\"class\",\"text-muted\"],[8],[0,\"Metascore\"],[9],[0,\"\\n      \"],[9],[0,\"\\n\"]],\"parameters\":[]},null],[0,\"  \"],[9],[0,\"\\n  \"],[7,\"div\",true],[10,\"class\",\"plot text-muted\"],[8],[0,\"\\n    \"],[1,[23,0,[\"movie\",\"plot\"]],false],[0,\"\\n  \"],[9],[0,\"\\n  \"],[7,\"div\",true],[10,\"class\",\"small text-muted\"],[8],[0,\"\\n    Director: \"],[1,[23,0,[\"movie\",\"director\"]],false],[0,\"\\n  \"],[9],[0,\"\\n\"],[4,\"if\",[[23,0,[\"authenticated\",\"successful\"]]],null,{\"statements\":[[0,\"    \"],[7,\"div\",true],[10,\"class\",\"movie-actions\"],[8],[0,\"\\n      \"],[7,\"a\",false],[12,\"role\",\"button\"],[3,\"action\",[[23,0,[]],\"delete\"]],[8],[7,\"i\",true],[10,\"class\",\"fa fa-trash-alt\"],[8],[9],[9],[0,\"\\n      \"],[5,\"link-to\",[],[[\"@route\",\"@model\"],[\"movie.edit\",[23,0,[\"movie\",\"id\"]]]],{\"statements\":[[7,\"i\",true],[10,\"class\",\"fa fa-edit\"],[8],[9]],\"parameters\":[]}],[0,\"\\n    \"],[9],[0,\"\\n\"]],\"parameters\":[]},null],[9]],\"hasEval\":false}",
+    "id": "WUA9LAaq",
+    "block": "{\"symbols\":[],\"statements\":[[7,\"div\",true],[10,\"class\",\"poster\"],[8],[0,\"\\n  \"],[7,\"img\",true],[11,\"src\",[23,0,[\"movie\",\"poster\"]]],[11,\"alt\",[29,[\"Poster for \",[23,0,[\"movie\",\"title\"]]]]],[10,\"z\",\"\"],[8],[9],[0,\"\\n\"],[9],[0,\"\\n\"],[7,\"div\",true],[10,\"class\",\"details\"],[8],[0,\"\\n  \"],[7,\"div\",true],[8],[0,\"\\n    \"],[7,\"span\",true],[11,\"class\",[29,[\"badge \",[22,\"bgClass\"]]]],[8],[1,[23,0,[\"movie\",\"type\"]],false],[9],[0,\"\\n  \"],[9],[0,\"\\n  \"],[7,\"h3\",true],[10,\"class\",\"title\"],[8],[0,\"\\n    \"],[7,\"span\",true],[10,\"class\",\"position font-normal\"],[8],[1,[22,\"position\"],false],[0,\".\"],[9],[0,\" \"],[1,[23,0,[\"movie\",\"title\"]],false],[0,\"\\n    \"],[7,\"span\",true],[10,\"class\",\"text-muted font-normal\"],[8],[0,\"(\"],[1,[23,0,[\"yearString\"]],false],[0,\")\"],[9],[0,\"\\n  \"],[9],[0,\"\\n  \"],[7,\"div\",true],[10,\"class\",\"censor-runtime-genre\"],[8],[0,\"\\n    \"],[1,[23,0,[\"movie\",\"rated\"]],false],[0,\" \"],[7,\"span\",true],[10,\"class\",\"ghost\"],[8],[0,\"|\"],[9],[0,\" \"],[1,[23,0,[\"movie\",\"runtime\"]],false],[0,\" \"],[7,\"span\",true],[10,\"class\",\"ghost\"],[8],[0,\"|\"],[9],[0,\"\\n    \"],[1,[23,0,[\"movie\",\"genre\"]],false],[0,\"\\n  \"],[9],[0,\"\\n  \"],[7,\"div\",true],[10,\"class\",\"rating\"],[8],[0,\"\\n    \"],[7,\"i\",true],[10,\"class\",\"icon-yellow fa fa-star\"],[8],[9],[0,\" \"],[7,\"strong\",true],[8],[1,[23,0,[\"movie\",\"imdbRating\"]],false],[9],[0,\"\\n\"],[4,\"if\",[[23,0,[\"movie\",\"metascore\"]]],null,{\"statements\":[[0,\"      \"],[7,\"span\",true],[10,\"class\",\"mt-score\"],[8],[0,\"\\n        \"],[7,\"span\",true],[10,\"class\",\"badge bg-yellow\"],[8],[1,[23,0,[\"movie\",\"metascore\"]],false],[9],[0,\"\\n        \"],[7,\"span\",true],[10,\"class\",\"text-muted\"],[8],[0,\"Metascore\"],[9],[0,\"\\n      \"],[9],[0,\"\\n\"]],\"parameters\":[]},null],[0,\"  \"],[9],[0,\"\\n  \"],[7,\"div\",true],[10,\"class\",\"plot text-muted\"],[8],[0,\"\\n    \"],[1,[23,0,[\"movie\",\"plot\"]],false],[0,\"\\n  \"],[9],[0,\"\\n  \"],[7,\"div\",true],[10,\"class\",\"small text-muted\"],[8],[0,\"\\n    Director: \"],[1,[23,0,[\"movie\",\"director\"]],false],[0,\"\\n  \"],[9],[0,\"\\n\"],[4,\"if\",[[23,0,[\"authenticated\",\"successful\"]]],null,{\"statements\":[[0,\"    \"],[7,\"div\",true],[10,\"class\",\"movie-actions\"],[8],[0,\"\\n      \"],[7,\"a\",false],[12,\"role\",\"button\"],[3,\"action\",[[23,0,[]],\"delete\"]],[8],[7,\"i\",true],[10,\"class\",\"fa fa-trash-alt\"],[8],[9],[9],[0,\"\\n      \"],[5,\"link-to\",[],[[\"@route\",\"@model\"],[\"movie.edit\",[23,0,[\"movie\"]]]],{\"statements\":[[7,\"i\",true],[10,\"class\",\"fa fa-edit\"],[8],[9]],\"parameters\":[]}],[0,\"\\n    \"],[9],[0,\"\\n\"]],\"parameters\":[]},null],[9]],\"hasEval\":false}",
     "meta": {
       "moduleName": "movie-portal/templates/components/movie-details.hbs"
-    }
-  });
-
-  _exports.default = _default;
-});
-;define("movie-portal/templates/components/movie", ["exports"], function (_exports) {
-  "use strict";
-
-  Object.defineProperty(_exports, "__esModule", {
-    value: true
-  });
-  _exports.default = void 0;
-
-  var _default = Ember.HTMLBars.template({
-    "id": "VpwN44Be",
-    "block": "{\"symbols\":[],\"statements\":[[5,\"input-field\",[],[[\"@label\",\"@value\",\"@disabled\"],[\"Title\",[23,0,[\"movie\",\"title\"]],[23,0,[\"editMovie\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"Type\",[23,0,[\"movie\",\"type\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"year\",[23,0,[\"movie\",\"year\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"rated\",[23,0,[\"movie\",\"rated\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"released\",[23,0,[\"movie\",\"released\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"runtime\",[23,0,[\"movie\",\"runtime\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"director\",[23,0,[\"movie\",\"director\"]]]]],[0,\"\\n\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"writer\",[23,0,[\"movie\",\"writer\"]]]]],[0,\"\\n\"],[7,\"label\",true],[10,\"class\",\"input-label\"],[8],[0,\"Plot\"],[9],[0,\"\\n\"],[5,\"textarea\",[[12,\"rows\",\"5\"]],[[\"@value\"],[[23,0,[\"movie\",\"plot\"]]]]],[0,\"\"],[5,\"input-field\",[],[[\"@label\",\"@value\"],[\"Genre(s)\",[23,0,[\"movie\",\"genre\"]]]]],[0,\"\\n\"],[7,\"button\",false],[12,\"class\",\"btn\"],[3,\"action\",[[23,0,[]],\"takeAction\"]],[8],[1,[23,0,[\"buttonLabel\"]],false],[9]],\"hasEval\":false}",
-    "meta": {
-      "moduleName": "movie-portal/templates/components/movie.hbs"
     }
   });
 
@@ -962,8 +972,8 @@
   _exports.default = void 0;
 
   var _default = Ember.HTMLBars.template({
-    "id": "9ptvDHUL",
-    "block": "{\"symbols\":[],\"statements\":[[5,\"movie\",[[12,\"class\",\"edit-movie-wrapper\"]],[[\"@action\",\"@movie\"],[\"edit\",[23,0,[\"model\"]]]]]],\"hasEval\":false}",
+    "id": "yCu6qd2n",
+    "block": "{\"symbols\":[],\"statements\":[[5,\"movie-action\",[[12,\"class\",\"edit-movie-wrapper\"]],[[\"@afterAction\",\"@action\",\"@movie\"],[[28,\"action\",[[23,0,[]],\"afterEdit\"],null],\"edit\",[23,0,[\"model\"]]]]]],\"hasEval\":false}",
     "meta": {
       "moduleName": "movie-portal/templates/movie/edit.hbs"
     }
